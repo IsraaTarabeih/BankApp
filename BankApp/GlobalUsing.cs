@@ -1,6 +1,2 @@
-﻿namespace BankApp
-{
-    public class GlobalUsing
-    {
-    }
-}
+﻿global using BankApp.Interface;
+global using BankApp.Domain;
