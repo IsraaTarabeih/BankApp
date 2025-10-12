@@ -1,5 +1,4 @@
-﻿
-namespace BankApp.Domain;
+﻿namespace BankApp.Domain;
 
 public class BankAccount : IBankAccount
 {
