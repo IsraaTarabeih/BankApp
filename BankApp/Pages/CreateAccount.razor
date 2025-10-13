@@ -1,0 +1,86 @@
+﻿@page "/CreateAccount"
+@inject IAccountService AccountService
+
+<h3>Vänligen skapa ditt konto</h3>
+
+<EditForm Model="_model" OnValidSubmit="CreateAccountAsync">
+	<DataAnnotationsValidator />
+	<ValidadtionSummary />
+	<div>
+		<label>Kontonamn</label>
+		<InputText @bind-Value="_model.Name"/>
+	</div>
+
+	<div>
+		<label>KontoTyp</label>
+		<InputSelect @bind-Value="_model.Type">
+			<option value="">Välj Kontotyp!</option>
+			<option value="@AccountType.Deposits">Baskonto</option>
+			<option value="@AccountType.Savings">Sparkonto</option>
+		</InputSelect>
+	</div>
+
+	<div>
+		<label>Valuta</label>
+		<InputText @bind-Value="_model.Currency" />
+	</div>
+	<div>
+		<label>Start saldo</label>
+		<InputNumber @bind-Value="_model.InitialBalance"/>
+	</div>
+
+	<button type="submit">Skapa konto!</button>
+</EditForm>
+
+@code {
+	private CreateAccountModel _model = new();
+
+	private Task CreateAccountAsync()
+
+	{
+		try
+		{
+			AccountService.CreateBankAccount(
+
+				_model.Name,
+				_model.Type,
+				_model.Currency,
+				_model.InitialBalance);
+
+			_model.Clear();
+
+		}
+		catch (Exception exception)
+		{
+			Console.WriteLine(exception);
+			throw;
+
+		}
+		return Task.CompletedTask;
+	}
+
+	private class CreateAccountModel
+	{
+		public string Name { get; set; } = string.Empty;
+		public AccountType Type { get; set; } = default;
+		public string Currency { get; set; } = String.Empty;
+		public decimal InitialBalance { get; set; } = 0;
+
+		public void Clear()
+		{
+			Name = string.Empty;
+			Type = default;
+			Currency = string.Empty;
+			InitialBalance = 0;
+
+		}
+
+	}
+
+
+}
+
+		
+	
+
+	
