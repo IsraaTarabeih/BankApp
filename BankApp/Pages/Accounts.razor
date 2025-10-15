@@ -1,45 +1,44 @@
 ﻿@page "/accounts"
 @inject IAccountService AccountService
 
-<h3>Dina konton</h3>
+<h3>Dina Konton</h3>
 
-@if (accounts == null || !accounts.Any())
+@if (!accounts.Any())
 {
 	<p>Inga konton skapade ännu.</p>
 }
 else
 {
-	<table class="table">
+	<table class="table table-striped align-middle">
 		<thead>
 			<tr>
 				<th>Namn</th>
 				<th>Typ</th>
 				<th>Valuta</th>
-				<th>Saldo</th>
+				<th class="text-end">Saldo</th>
 				<th>Senast uppdaterad</th>
 			</tr>
 		</thead>
-	
-	<tbody>
-		@foreach (var acc in accounts)
-		{
-			<tr>
-				<td>@acc.Name</td>
-				<td>@acc.AccountType</td>
-				<td>@acc.Currency</td>
-				<td>@acc.Balance</td>
-				<td>@acc.LastUpdated.ToString("yyyy-mm-dd HH:mm")</td>
-			</tr>
-		}
-	</tbody>
+		<tbody>
+			@foreach (var acc in accounts)
+			{
+				<tr>
+					<td>@acc.Name</td>
+					<td>@acc.AccountType</td>
+					<td>@acc.Currency</td>
+					<td class="text-end">@acc.Balance.ToString("N0", CultureInfo.GetCultureInfo("sv-SE"))</td>
+					<td>@acc.LastUpdated.ToString("yyyy-MM-dd HH:mm", CultureInfo.GetCultureInfo("sv-SE"))</td>
+				</tr>
+			}
+		</tbody>
 	</table>
 }
 
 @code {
 	private List<IBankAccount> accounts = new();
 
-	protected override void OnInitialized()
+	protected override async Task OnInitializedAsync()
 	{
-		accounts = AccountService.GetAccounts();
+		accounts = await AccountService.GetAccountsAsync();
 	}
 }

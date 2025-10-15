@@ -5,7 +5,7 @@
 
 <EditForm Model="_model" OnValidSubmit="CreateAccountAsync">
 	<DataAnnotationsValidator />
-	<ValidadtionSummary />
+	<ValidationSummary />
 	<div>
 		<label>Kontonamn</label>
 		<InputText @bind-Value="_model.Name"/>
@@ -15,8 +15,9 @@
 		<label>KontoTyp</label>
 		<InputSelect @bind-Value="_model.Type">
 			<option value="">Välj Kontotyp!</option>
-			<option value="@AccountType.Deposits">Baskonto</option>
-			<option value="@AccountType.Savings">Sparkonto</option>
+			<option value="@AccountType.Baskonto">Baskonto</option>
+			<option value="@AccountType.Sparkonto">Sparkonto</option>
+			<option value="@AccountType.Företagskonto">Företagskonto</option>
 		</InputSelect>
 	</div>
 
@@ -32,31 +33,71 @@
 	<button type="submit">Skapa konto!</button>
 </EditForm>
 
+<h3>Dina konton</h3>
+
+@if (accounts == null || !accounts.Any())
+{
+	<p>Inga konton skapade ännu.</p>
+}
+else
+{
+	<table class="table">
+		<thead>
+			<tr>
+				<th>Namn</th>
+				<th>Typ</th>
+				<th>Valuta</th>
+				<th>Saldo</th>
+				<th>Senast uppdaterad</th>
+			</tr>
+		</thead>
+	<tbody>
+		@foreach (var acc in accounts)
+		{
+			<tr>
+				<td>@acc.Name</td>
+				<td>@acc.AccountType</td>
+				<td>@acc.Currency</td>
+				<td>@acc.Balance.ToString("N0", CultureInfo.GetCultureInfo("sv-SE"))</td>
+				<td>@acc.LastUpdated.ToString("yyyy-MM-dd HH:mm", CultureInfo.GetCultureInfo("sv-SE"))</td>
+			</tr>
+		}
+	</tbody>
+	</table>
+
+}
+
 @code {
+	private List<IBankAccount> accounts = new();
 	private CreateAccountModel _model = new();
 
-	private Task CreateAccountAsync()
-
+	protected override async Task OnInitializedAsync()
+	{
+		accounts = await AccountService.GetAccountsAsync();
+	}
+	private async Task CreateAccountAsync()
 	{
 		try
 		{
-			AccountService.CreateBankAccount(
+			await AccountService.CreateBankAccountAsync(
 
 				_model.Name,
 				_model.Type,
 				_model.Currency,
-				_model.InitialBalance);
+				_model.InitialBalance
+			);
+
+			accounts = await AccountService.GetAccountsAsync();
 
 			_model.Clear();
-
 		}
-		catch (Exception exception)
+		catch (Exception ex)
 		{
-			Console.WriteLine(exception);
+			Console.WriteLine($"Fel vid skapande av konto: {ex.Message}");
 			throw;
 
 		}
-		return Task.CompletedTask;
+		
 	}
 
 	private class CreateAccountModel
@@ -64,15 +105,15 @@
 		public string Name { get; set; } = string.Empty;
 		public AccountType Type { get; set; } = default;
 		public string Currency { get; set; } = String.Empty;
-		public decimal InitialBalance { get; set; } = 0;
+		public decimal InitialBalance { get; set; } = 0m;
 
 		public void Clear()
 		{
 			Name = string.Empty;
 			Type = default;
 			Currency = string.Empty;
-			InitialBalance = 0;
-
+			InitialBalance = 0m;
+			 
 		}
 
 	}

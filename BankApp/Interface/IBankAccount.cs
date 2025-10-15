@@ -12,8 +12,8 @@
         decimal Balance { get; }
         DateTime LastUpdated { get; }
 
-        void Withdraw (decimal amount); 
-        void Deposit (decimal amount);
+        void Deposit (decimal amount); 
+        void Withdraw (decimal amount);
 
     }
 }
