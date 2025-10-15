@@ -1,7 +1,12 @@
-﻿namespace BankApp.Domain;
-
-public enum AccountType
+﻿namespace BankApp.Domain
 {
-    Savings,
-    Deposits
+    public enum AccountType
+    {
+        Baskonto = 0,
+        Sparkonto = 1,
+        Företagskonto = 2
+
+    }
+    
 }
+   

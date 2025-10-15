@@ -2,8 +2,9 @@
 {
     public interface IAccountService
     {
-        IBankAccount CreateBankAccount(string name, AccountType accountType, string currency, decimal initialBalance);
-        List<IBankAccount> GetAccounts();
+       
+        Task<IBankAccount> CreateBankAccountAsync(string name, AccountType accountType, string currency, decimal initialBalance);
+        Task<List<IBankAccount>>GetAccountsAsync();
        
     }
 }
