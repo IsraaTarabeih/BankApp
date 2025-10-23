@@ -37,14 +37,15 @@ public class BankAccount : IBankAccount
 
     public void Deposit(decimal amount)
     {
-        if (amount <= 0) return;
+        if (amount <= 0) throw new ArgumentException("Belopp måste vara större än 0.");
         Balance += amount;
         LastUpdated = DateTime.Now;
     }
 
     public void Withdraw(decimal amount)
     {
-        if (amount <= 0 || amount > Balance) return;
+        if (amount <= 0) throw new ArgumentException("Belopp måste vara större än 0 kr.");
+        if (amount > Balance) throw new InvalidOperationException("Otillräckligt saldo.");
         Balance -= amount;
         LastUpdated = DateTime.Now;
     }

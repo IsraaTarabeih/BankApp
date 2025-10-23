@@ -1,14 +1,26 @@
 ﻿@page "/CreateAccount"
 @inject IAccountService AccountService
 
+
 <h3>Vänligen skapa ditt konto</h3>
 
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+	<div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrWhiteSpace(_ok))
+{
+	<div class="alert alert-success">@_ok</div>
+}
+
+<!-- Formulär för att skapa konto-->
 <EditForm Model="_model" OnValidSubmit="CreateAccountAsync">
 	<DataAnnotationsValidator />
 	<ValidationSummary />
 	<div>
 		<label>Kontonamn</label>
 		<InputText @bind-Value="_model.Name"/>
+		<ValidationMessage TValue="string" For="@(() => _model.Name)" />
 	</div>
 
 	<div>
@@ -19,15 +31,18 @@
 			<option value="@AccountType.Sparkonto">Sparkonto</option>
 			<option value="@AccountType.Företagskonto">Företagskonto</option>
 		</InputSelect>
+		<ValidationMessage TValue="AccountType?" For="@(() => _model.Type)" />
 	</div>
 
 	<div>
 		<label>Valuta</label>
 		<InputText @bind-Value="_model.Currency" />
+		<ValidationMessage TValue="string" For="@(() => _model.Currency)" />
 	</div>
 	<div>
 		<label>Start saldo</label>
 		<InputNumber @bind-Value="_model.InitialBalance"/>
+		<ValidationMessage TValue="decimal" For="@(() => _model.InitialBalance)" />
 	</div>
 
 	<button type="submit">Skapa konto!</button>
@@ -49,6 +64,7 @@ else
 				<th>Valuta</th>
 				<th>Saldo</th>
 				<th>Senast uppdaterad</th>
+				<th></th>
 			</tr>
 		</thead>
 	<tbody>
@@ -60,6 +76,13 @@ else
 				<td>@acc.Currency</td>
 				<td>@acc.Balance.ToString("N0", CultureInfo.GetCultureInfo("sv-SE"))</td>
 				<td>@acc.LastUpdated.ToString("yyyy-MM-dd HH:mm", CultureInfo.GetCultureInfo("sv-SE"))</td>
+				<td class="text-end">
+					<button type="button"
+						class="btn btn-sm btn-outline-danger"
+					@onclick="() => DeleteAccount(acc.Id)">
+					Radera
+				</button>
+				</td>
 			</tr>
 		}
 	</tbody>
@@ -70,19 +93,33 @@ else
 @code {
 	private List<IBankAccount> accounts = new();
 	private CreateAccountModel _model = new();
+	private string? _error;
+	private string? _ok;
 
+	//Laddar konton när sidan öppnas
 	protected override async Task OnInitializedAsync()
 	{
 		accounts = await AccountService.GetAccountsAsync();
 	}
+
+	// Skapar nytt konto 
 	private async Task CreateAccountAsync()
 	{
+		_error = null;
+		_ok = null;
+
 		try
 		{
+			if (_model.Type is null)
+			{
+				_error = "Välj en kontotyp.";
+				return;
+			}
+
 			await AccountService.CreateBankAccountAsync(
 
 				_model.Name,
-				_model.Type,
+				_model.Type.Value,
 				_model.Currency,
 				_model.InitialBalance
 			);
@@ -90,27 +127,41 @@ else
 			accounts = await AccountService.GetAccountsAsync();
 
 			_model.Clear();
+			_ok = "Konto skapat.";
 		}
 		catch (Exception ex)
 		{
-			Console.WriteLine($"Fel vid skapande av konto: {ex.Message}");
-			throw;
-
+			_error = ex.Message;
 		}
-		
+
 	}
 
+	//Raderar konto (kopplas till knappen)
+	private async Task DeleteAccount(Guid id)
+	{
+		await AccountService.DeleteAccountAsync(id);
+		accounts = await AccountService.GetAccountsAsync();
+	}
+
+	//Modell för 
 	private class CreateAccountModel
 	{
+		[Required(ErrorMessage = "Namn krävs.")]
 		public string Name { get; set; } = string.Empty;
-		public AccountType Type { get; set; } = default;
+
+		[Required(ErrorMessage = "Kontotyp krävs.")]
+		public AccountType? Type { get; set; } = null;
+
+		[Required(ErrorMessage = "Valuta krävs.")]
 		public string Currency { get; set; } = String.Empty;
+
+		[Range(0, double.MaxValue, ErrorMessage = "Startsaldo kan inte vara negativt.")]
 		public decimal InitialBalance { get; set; } = 0m;
 
 		public void Clear()
 		{
 			Name = string.Empty;
-			Type = default;
+			Type = null;
 			Currency = string.Empty;
 			InitialBalance = 0m;
 			 

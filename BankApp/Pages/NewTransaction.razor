@@ -1,0 +1,160 @@
+﻿@page "/transactions/new"
+@inject IAccountService AccountService
+
+<h3>Ny transaktion</h3>
+
+
+	@if (!string.IsNullOrWhiteSpace(_error))
+	{
+		<div class="alert alert-danger">@_error</div>
+	}
+	@if (!string.IsNullOrWhiteSpace(_ok))
+	{
+		<div class="alert alert-success">@_ok</div>
+	}
+<EditForm Model="_model" OnValidSubmit="SubmitAsync">
+	<DataAnnotationsValidator />
+	<ValidationSummary />
+
+	<div>
+		<label>Typ</label><br />
+		<InputSelect @bind-Value="_model.Type">
+			<option value="Insättning">Insättning</option>
+			<option value="Uttag">Uttag</option>
+			<option value="Överföring">Överföring</option>
+		</InputSelect>
+	</div>
+
+	<div>
+		<label>Från konto</label><br />
+		<!-- Inaktiverad vid Insättning-->
+		<InputSelect @bind-Value="_model.FromAccountId" disabled="@IsDeposit">
+			<option value="">Välj konto</option>
+			@foreach (var account in accounts)
+			{
+				<option value="@account.Id">@account.Name (@account.Balance.ToString("N0", CultureInfo.GetCultureInfo("sv-SE")))</option>
+			}
+		</InputSelect>
+		@if (!IsDeposit)
+		{
+			<ValidationMessage For="@(()=>_model.FromAccountId)" />
+		}
+	</div>
+
+		<div>
+			<label>Till konto</label><br /> 
+			<!-- Syns alltid; inaktiverad vid Uttag -->
+			<InputSelect @bind-Value="_model.ToAccountId" disabled="@IsWithdraw">
+				<option value="">Välj konto</option>
+				@foreach (var account in accounts)
+				{
+					<option value="@account.Id">@account.Name (@account.Balance.ToString("N0", CultureInfo.GetCultureInfo("sv-SE")))</option>
+				}
+				@if (!IsWithdraw)
+			{
+				<ValidationMessage For="@(()=>_model.ToAccountId)" />
+			}
+		</InputSelect>
+		</div>
+	
+
+	<div>
+		<label>Belopp</label><br />
+		<InputNumber @bind-Value="_model.Amount"/>
+		<ValidationMessage For="@(()=>_model.Amount)" />
+	</div>  
+
+	<div>
+		<label>Meddelande</label><br />
+		<InputText @bind-Value="_model.Note" />
+	</div>
+
+	<button type="submit">Genomför</button>
+
+	</EditForm>
+
+@code {
+
+	private List<IBankAccount> accounts = new();
+	private FormModel _model = new();
+	private string? _error;
+	private string? _ok;
+
+	protected override async Task OnInitializedAsync()
+	{
+		accounts = await AccountService.GetAccountsAsync();
+	}
+
+	private bool IsDeposit => string.Equals(_model.Type, "Insättning", StringComparison.OrdinalIgnoreCase);
+	private bool IsWithdraw => string.Equals(_model.Type, "Uttag", StringComparison.OrdinalIgnoreCase);
+	private bool IsTransfer => string.Equals(_model.Type, "Överföring", StringComparison.OrdinalIgnoreCase);
+
+
+	private async Task SubmitAsync()
+	{
+
+		_error = null;
+		_ok = null;
+
+		try
+		{
+			if (_model.Amount <= 0)
+			{
+				_error = "Belopp måste vara större än 0 kr.";
+				return;
+			}
+
+			if (IsDeposit)
+			{
+				if (!Guid.TryParse(_model.ToAccountId, out var to))
+				{
+					_error = "Välj mottagarkonto.";
+					return;
+				}
+				await AccountService.DepositAsync(to, _model.Amount, _model.Note);
+			}
+			else if (IsWithdraw)
+			{
+				if (!Guid.TryParse(_model.FromAccountId, out var from))
+				{
+					_error = "Välj från-konto.";
+					return;
+				}
+				await AccountService.WithdrawAsync(from, _model.Amount, _model.Note);
+			}
+			else if (IsTransfer)
+			{
+				if (!Guid.TryParse(_model.FromAccountId, out var from) ||
+				!Guid.TryParse(_model.ToAccountId, out var to))
+				{
+					_error = "Välj både från- och till-konto.";
+					return;
+				}
+				if (from == to)
+				{
+					_error = "Välj två olika konton.";
+					return;
+				}
+				await AccountService.TransferAsync(from, to, _model.Amount, _model.Note);
+			}
+			_model = new(); //Nollställer formulär
+			accounts = await AccountService.GetAccountsAsync(); //Uppdatera saldon
+			_ok = "Transaktionen genomfördes.";
+		}
+		catch (Exception ex)
+		{
+			_error = ex.Message;
+		}
+	}
+
+	private class FormModel
+	{
+		public string Type { get; set; } = "Insättning";
+		public string FromAccountId { get; set; } = string.Empty;
+		public string ToAccountId { get; set; } = string.Empty;
+
+		[Range(0.01, double.MaxValue, ErrorMessage = "Belopp måste vara större än 0.")]
+		public decimal Amount { get; set; }
+		public string? Note { get; set; }
+	}
+}
