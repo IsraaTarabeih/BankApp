@@ -1,9 +1,10 @@
-﻿namespace BankApp.Interface
+﻿namespace BankApp.Interface;
+
+public interface IStorageService
 {
-    public interface IStorageService
-    {
-        Task<List<BankAccount>> LoadAccountsAsync();
-        Task SaveAccountsAsync (List<BankAccount> accounts);
-        Task ClearAsync();
-    }
+    Task<List<BankAccount>> LoadAccountsAsync();
+    Task SaveAccountsAsync (List<BankAccount> accounts);
+    Task<List<Transaction>> LoadTransactionsAsync();
+    Task SaveTransactionsAsync (List<Transaction> transactions);
+    Task ClearAsync();
 }

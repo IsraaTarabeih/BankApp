@@ -3,6 +3,11 @@
 
 <h3>Dina Konton</h3>
 
+@if (!string.IsNullOrWhiteSpace(error))
+{
+	<div class="alert alert-danger">@error</div>
+}
+
 @if (!accounts.Any())
 {
 	<p>Inga konton skapade ännu.</p>
@@ -17,6 +22,7 @@ else
 				<th>Valuta</th>
 				<th class="text-end">Saldo</th>
 				<th>Senast uppdaterad</th>
+				<th class="text-end">Åtgärd</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -28,6 +34,12 @@ else
 					<td>@acc.Currency</td>
 					<td class="text-end">@acc.Balance.ToString("N0", CultureInfo.GetCultureInfo("sv-SE"))</td>
 					<td>@acc.LastUpdated.ToString("yyyy-MM-dd HH:mm", CultureInfo.GetCultureInfo("sv-SE"))</td>
+					<td class="text-end">
+						<button class="btn btn-sm btn-outline-danger"
+						@onclick="() => DeleteAccount(acc.Id)">
+						Radera
+					</button>
+					</td>
 				</tr>
 			}
 		</tbody>
@@ -35,7 +47,23 @@ else
 }
 
 @code {
+
+	private string? error;
 	private List<IBankAccount> accounts = new();
+
+	private async Task DeleteAccount(Guid id)
+	{
+		error = null;
+		try
+		{
+			await AccountService.DeleteAccountAsync(id);
+			accounts = await AccountService.GetAccountsAsync();
+		}
+		catch (Exception ex)
+		{
+			error = ex.Message;
+		}
+	}
 
 	protected override async Task OnInitializedAsync()
 	{
