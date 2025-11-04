@@ -2,12 +2,19 @@
 @page "/transactions/history/{AccountId:guid}"
 @inject IAccountService AccountService
 
+@* 
+	Page for viewing a user´s transaction history.
+	Includes filters for account, type, date range, and sorting options.
+	Shows all transactions in detail.
+*@
+
 <h3>Transaktionshistorik</h3>
 
+@* Dropdown for choosing which account´s transactions to view. *@ 
 <div>
 	<label>Välj konto</label><br />
 	<select @bind="FilterAccountId">
-		<option value="" selected>Alla</option>
+		<option value="">Alla</option>
 		@foreach (var account in accounts)
 		{
 			<option value="@account.Id">@account.Name, (@account.AccountType) - Saldo: @account.Balance SEK </option>
@@ -15,6 +22,7 @@
 	</select>
 </div>
 
+@* Dropdown for filtering transactions by type. *@
 <div>
 	<label>Typ</label><br />
 	<select @bind="FilterType">
@@ -26,6 +34,7 @@
 	</select>
 </div>
 
+@* Input fields for setting a date range to filter transactions. *@
 <div>
 	<label>Från datum</label><br />
 	<input type="date" @bind="FromDate" />
@@ -36,22 +45,41 @@
 	<input type="date" @bind="ToDate" />
 </div>
 
-<table class="table table-striped table-bordered align-middle mt-3" style="width:100%; border-collapse:separate; border-spacing:0 8px;">
-	<thead class="table light">
+@* Dropdowns to choose sorting field (Date or Amount) and sort order (Ascending or Descending). *@
+<div class="mb-3">
+	<label>Sortera efter:</label>
+
+	<select class="form-select d-inline w-auto" @bind="SortBy">
+		<option value="Date">Datum</option>
+		<option value="Amount">Belopp</option>
+	</select>
+
+<select class="form-select d-inline w-auto ms-2" @bind="SortDir">
+	<option value="Desc">Fallande</option>
+	<option value="Asc">Stigande</option>
+</select>
+</div>
+
+@* Table showing all filtered and sorted transactions. *@
+<table class="table table-striped table-hover table-bordered align-middle mt-3 w-100">
+	<thead class="table-light">
 		<tr>
-			<th style="padding:10px;">Datum</th>
-			<th style="padding:10px;">Typ</th>
-			<th style="padding:10px; text-align:right;">Belopp</th>
-			<th style="padding:10px; text-align:right;">Saldo efter</th>
-			<th style="padding:10px;">Meddelande</th>
+			<th class="px-3">Datum</th>
+			<th class="px-3">Typ</th>
+			<th class="px-3 text-end">Belopp</th>
+			<th class="px-3 text-end">Saldo efter</th>
+			<th class="px-3">Meddelande</th>
 		</tr>
 	</thead>
+
+	@* Table body displaying one row per transaction. *@
 	<tbody>
 		@foreach (var transaction in filtered) 
 		{
-			
+			@* Finds the other account in a transfer so we can show its name. *@
 			var counter = accounts.FirstOrDefault(account => account.Id == transaction.CounterpartyAccountId);
 
+			@* Converts the transaction type into a readable label shown in the table. *@
 			var typeText = transaction.Type switch
 			{
 				TransactionType.Insättning => "Insättning",
@@ -61,37 +89,65 @@
 				_ => transaction.Type.ToString()
 			};
 
+			@* Displays one table row for each transaction. *@
 			<tr>
-				<td style="padding:10px;">@transaction.Date.ToString("yyyy-MM-dd HH:mm", CultureInfo.GetCultureInfo("sv-SE"))</td>
-				<td style="padding:10px;">@typeText</td>
-				<td style="padding:10px; text-align:right; color:@(transaction.Type == TransactionType.Uttag || transaction.Type == TransactionType.ÖverföringUt ? "red" : "black" )"> 
+				<td class="px-3">@transaction.Date.ToString("yyyy-MM-dd HH:mm", CultureInfo.GetCultureInfo("sv-SE"))</td>
+				<td class="px-3">@typeText</td>
+				<td class="px-3 text-end @(transaction.Type == TransactionType.Uttag || transaction.Type == TransactionType.ÖverföringUt ? "text-danger" : "")"> 
 					@((transaction.Type == TransactionType.Uttag || transaction.Type == TransactionType.ÖverföringUt ? "-" : "") + transaction.Amount.ToString("N0", CultureInfo.GetCultureInfo("sv-SE"))) </td>
-				<td style="padding:10px; text-align:right;">@transaction.BalanceAfter.ToString("N0", CultureInfo.GetCultureInfo("sv-SE"))</td>
-				<td style="padding:10px;">@transaction.Note</td>
+				<td class="px-3 text-end">@transaction.BalanceAfter.ToString("N0", CultureInfo.GetCultureInfo("sv-SE"))</td>
+				<td class="px-3">@transaction.Note</td>
 			</tr>
 		}
 	</tbody>
 </table>
 
 @code {
+
+	// Holds all accounts and transactions used to display and filter the history.
 	private List<IBankAccount> accounts = new();
 	private List<Transaction> all = new();
 	private List<Transaction> filtered = new();
+
+	// Filters that control which transactions are shown (account, type, and date range.)
 	private string filterAccountId = string.Empty;
 	private string filterType = string.Empty;
 	private DateTime? fromDate;
 	private DateTime? toDate;
 
+	// Sorting options (field and order).
+	private string sortBy = "Date";
+	private string sortDir = "Desc";
+
+	// Stores which field is used for sorting (linked to the "sort by" dropdown).
+	// When the user changes this value, the transaction list is updated immediately.
+	
+	private string SortBy
+	{
+		get => sortBy;
+		set { sortBy = value; ApplyFilters(); }
+	}
+
+	// Stores the selected sort direction (linked to the "Order" dropdown).
+	// When the user changes this value, the transaction list is refreshed to match.
+	private string SortDir
+	{
+		get => sortDir;
+		set { sortDir = value; ApplyFilters(); }
+	}
+
+	// Account ID passed through the page URL. If provided, the history will automatically filter to this account.
 	[Parameter] public Guid? AccountId { get; set;}
 
+	// Loads all accounts and transactions when the page first opens.
 	protected override async Task OnInitializedAsync()
 	{
 		accounts = await AccountService.GetAccountsAsync();
 		all = await AccountService.GetTransactionsAsync();
 		ApplyFilters();
-
 	}
 
+	// Runs after parameters are set. If an account ID exists, filters the transaction list for that account.
 	protected override void OnParametersSet()
 	{
 		if (AccountId.HasValue)
@@ -101,27 +157,25 @@
 		}
 	}
 
+	// Rebuilds the transaction list based on the user´s selected filters and sorting options.
+	// If no account is selected, incoming transfers are excluded from the results..
 	private void ApplyFilters()
 	{
 		IEnumerable<Transaction> result = all;
 
-		// Ta bort startsaldo
 		result = result.Where(transaction => !string.Equals(transaction.Note, "Startsaldo", StringComparison.OrdinalIgnoreCase));
 
-		// Filtrera på konto (om valt)
 		if (!string.IsNullOrWhiteSpace(filterAccountId) && Guid.TryParse(filterAccountId, out var id))
 		{
 
 			result = result.Where(transaction => transaction.AccountId == id);
 		}
 
-		// Filtrera på kontotyp (om valt)
 		if (!string.IsNullOrWhiteSpace(filterType) && Enum.TryParse<TransactionType>(filterType, out var tt))
 		{
 			result = result.Where(transaction => transaction.Type == tt);
 		}
 
-		// Filtrera på datumintervall
 		if (fromDate.HasValue)
 			result = result.Where(transaction => transaction.Date.Date >= fromDate.Value.Date);
 
@@ -133,16 +187,18 @@
 			result = result.Where(transaction => transaction.Type != TransactionType.ÖverföringIn);
 		}
 
-		filtered = result.OrderByDescending(transaction => transaction.Date).ToList();
-		StateHasChanged();
+		filtered = (SortBy, SortDir) switch
+		{
+			("Amount", "Asc") => result.OrderBy(transaction => transaction.Amount).ToList(),
+			("Amount", "Desc") => result.OrderByDescending(transaction => transaction.Amount).ToList(),
+			("Date", "Asc") => result.OrderBy(transaction => transaction.Date).ToList(),
+			_ => result.OrderByDescending(transaction => transaction.Date).ToList()
+		};
 	}
-
+	
+	// Filter properties used to control which transactions are shown.
 	private string FilterAccountId { get => filterAccountId; set { filterAccountId = value; ApplyFilters(); }}
-
 	private string FilterType { get => filterType; set { filterType = value; ApplyFilters(); }}
-
 	private DateTime? FromDate { get => fromDate; set { fromDate = value; ApplyFilters(); }}
-
 	private DateTime? ToDate { get => toDate; set { toDate = value; ApplyFilters(); }}
-
 }

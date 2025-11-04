@@ -1,19 +1,27 @@
 ﻿@page "/accounts"
 @inject IAccountService AccountService
 
+@*
+	Page that lists the user´s bank accounts.
+	Displays an error if something fails and allows deleting accounts.
+*@
+
 <h3>Dina Konton</h3>
 
+@* Shows a red alert if a server/service error message exits. *@
 @if (!string.IsNullOrWhiteSpace(error))
 {
 	<div class="alert alert-danger">@error</div>
 }
 
+@* If there are no accounts, show an empty-state message. *@
 @if (!accounts.Any())
 {
 	<p>Inga konton skapade ännu.</p>
 }
 else
 {
+	@* Accounts table: name, type, currency, balance, last updated, and actions. *@
 	<table class="table table-striped align-middle">
 		<thead>
 			<tr>
@@ -26,6 +34,7 @@ else
 			</tr>
 		</thead>
 		<tbody>
+			@* Show one table row for each account. *@
 			@foreach (var acc in accounts)
 			{
 				<tr>
@@ -35,6 +44,7 @@ else
 					<td class="text-end">@acc.Balance.ToString("N0", CultureInfo.GetCultureInfo("sv-SE"))</td>
 					<td>@acc.LastUpdated.ToString("yyyy-MM-dd HH:mm", CultureInfo.GetCultureInfo("sv-SE"))</td>
 					<td class="text-end">
+						@* Delete the selected account, then refresh the list. *@
 						<button class="btn btn-sm btn-outline-danger"
 						@onclick="() => DeleteAccount(acc.Id)">
 						Radera
@@ -46,11 +56,16 @@ else
 	</table>
 }
 
+@* Handles loading and deleting bank accounts. *@
 @code {
 
+	// Stores the last error message to display on the page.
 	private string? error;
+
+	// Contains all accounts currently displayed in the table.
 	private List<IBankAccount> accounts = new();
 
+	// Deletes an account by its ID and refreshes the account list.
 	private async Task DeleteAccount(Guid id)
 	{
 		error = null;
@@ -65,6 +80,7 @@ else
 		}
 	}
 
+	// Loads all accounts when the page is first initialized.
 	protected override async Task OnInitializedAsync()
 	{
 		accounts = await AccountService.GetAccountsAsync();

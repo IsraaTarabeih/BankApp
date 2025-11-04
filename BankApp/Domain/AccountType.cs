@@ -1,11 +1,11 @@
 ﻿namespace BankApp.Domain;
 
-public enum AccountType // Är en kategori som beskriver vilken typ av konto det är - ungefär som "kontoform" i en riktigt bank. 
+/// <summary>
+/// Defines different types of bank accounts.   
+/// </summary>
+public enum AccountType
 {
-    Baskonto = 0, 
+    Baskonto = 0,
     Sparkonto = 1,
     Företagskonto = 2
-
 }
-
-

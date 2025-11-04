@@ -1,8 +1,8 @@
 ﻿namespace BankApp.Interface;
-///<summary>
-///Interface containing the BankAccount methods 
-/// </summary>
 
+///<summary>
+/// Represents the core structure and functionality of a bank account.
+/// </summary>
 public interface IBankAccount
 {
     Guid Id { get; }
@@ -12,7 +12,9 @@ public interface IBankAccount
     decimal Balance { get; }
     DateTime LastUpdated { get; }
 
+    // Deposits the specified amount into the account.
     void Deposit (decimal amount); 
-    void Withdraw (decimal amount);
 
+    // Withdraws the specified amount from the account.
+    void Withdraw (decimal amount);
 }
