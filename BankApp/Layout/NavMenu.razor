@@ -1,5 +1,13 @@
-﻿<div class="top-row ps-4 navbar navbar-dark">
+﻿@*
+    <summary>
+        Navigation menu for the BankApp.
+        Shows links to different pages and controls the menu visibility.
+    </summary>
+*@
+
+<div class="top-row ps-4 navbar navbar-dark">
     <div class="container-fluid">
+        @* App title and button to show or hide the menu. *@
         <a class="navbar-brand" href="">BankApp</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
@@ -9,6 +17,7 @@
 
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
     <nav class="flex-column">
+        @* Navigation links. *@
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
@@ -48,10 +57,13 @@
 </div>
 
 @code {
+    // Keeps track of whether the menu is open or closed.
     private bool collapseNavMenu = true;
 
+    // Chooses which CSS class to use based on if the menu is open or closed.
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
+    // Switches the menu between open and closed.
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;

@@ -1,5 +1,6 @@
 ﻿@page "/counter"
 
+@* Page that displays a simple counter where the user can increase, decrease, or reset the value. *@
 <PageTitle>Counter</PageTitle>
 
 <h1>Räknare</h1>
@@ -12,51 +13,31 @@
     <button class="btn btn-secondary" @onclick="Reset">Återställ</button>
 </div>
 
+@* Handles the counter logic and button styling. *@
 @code {
+    // Current counter value.
     private int currentCount = 0;
 
+    // Determines the text color based on the counter value.
     private string CountTextClass =>
     currentCount > 0 ? "text-success"
     : currentCount < 0 ? "text-danger"
     : "";
 
+    // Sets the style for the increment button.
     private string IncButtonClass =>
     currentCount >= 0 ? "btn btn-success" : "btn btn-outline-success";
 
+    // Sets the style for the decrement button. 
     private string DecButtonClass =>
     currentCount <= 0 ? "btn btn-danger" : "btn btn-outline-danger";
 
+    // Increases the counter by one.
     private void Increment() => currentCount++;
-    private void Decrement() => currentCount--;
-    private void Reset() => currentCount = 0;
 
+    // Decreases the counter by one.
+    private void Decrement() => currentCount--;
+
+    // Resets the counter to zero.
+    private void Reset() => currentCount = 0;
 }
-
-@*Gamla koden:
-<p role="status" class="@CountTextClass">Nuvarande värde: @currentCount</p>
-
-<div class="mb-2">
-    <button class="@IncButtonClass me-2" @onclick="Increment">+1</button>
-    <button class="@DecButtonClass me-2" @onclick="Decrement">-1</button>
-    <button class="btn btn-secondary" @onclick="Reset">Återställ</button>
-</div>
-
-@code {
-    private int currentCount = 0;
-
-    private string CountTextClass =>
-    currentCount > 0 ? "text-success"
-    : currentCount < 0 ? "text-danger"
-    : "";
-
-    private string IncButtonClass =>
-    currentCount >= 0 ? "btn btn-success" : "btn btn-outline-success";
-
-    private string DecButtonClass =>
-    currentCount <= 0 ? "btn btn-danger" : "btn btn-outline-danger";
-
-    private void Increment() => currentCount++;
-    private void Decrement() => currentCount--;
-    private void Reset() => currentCount = 0;
-
-}*@

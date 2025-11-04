@@ -1,8 +1,13 @@
 ﻿@page "/transactions/new"
 @inject IAccountService AccountService
 
-<h3>Ny transaktion</h3>
+@*
+	Page for creating a new transaction. 
+	Includes form fields for type, accounts, amount, and note.
+	Handles deposits, withdrawals, and transfers with validation and feedback.
+*@
 
+<h3>Ny transaktion</h3>
 
 	@if (!string.IsNullOrWhiteSpace(_error))
 	{
@@ -12,10 +17,12 @@
 	{
 		<div class="alert alert-success">@_ok</div>
 	}
+	
 <EditForm Model="_model" OnValidSubmit="SubmitAsync">
 	<DataAnnotationsValidator />
 	<ValidationSummary />
 
+	@* Transaction type selector. *@
 	<div>
 		<label>Typ</label><br />
 		<InputSelect @bind-Value="_model.Type">
@@ -25,6 +32,7 @@
 		</InputSelect>
 	</div>
 
+	@* From account selector (disabled when depositing). *@
 	<div>
 		<label>Från konto</label><br />
 		<!-- Inaktiverad vid Insättning-->
@@ -40,7 +48,8 @@
 			<ValidationMessage For="@(()=>_model.FromAccountId)" />
 		}
 	</div>
-
+	
+	@* To account selector (disabled when withdrawing). *@
 		<div>
 			<label>Till konto</label><br /> 
 			<!-- Syns alltid; inaktiverad vid Uttag -->
@@ -57,39 +66,45 @@
 		</InputSelect>
 		</div>
 	
-
+	@* Amount input. *@
 	<div>
 		<label>Belopp</label><br />
 		<InputNumber @bind-Value="_model.Amount"/>
 		<ValidationMessage For="@(()=>_model.Amount)" />
 	</div>  
 
+	@* Note input. *@
 	<div>
 		<label>Meddelande</label><br />
 		<InputText @bind-Value="_model.Note" />
 	</div>
 
 	<button type="submit">Genomför</button>
-
-	</EditForm>
+</EditForm>
 
 @code {
 
+	// Holds all data and handles logic for creating new transactions.
+	// Manages account loading, form validation, and transaction execution.
 	private List<IBankAccount> accounts = new();
 	private FormModel _model = new();
 	private string? _error;
 	private string? _ok;
 
+	// Loads all available accounts when the page is opened.
 	protected override async Task OnInitializedAsync()
 	{
 		accounts = await AccountService.GetAccountsAsync();
 	}
 
+	// Helpers for checking which transaction type is selected.
+	// Used to enable/disable account fields and control form behavior.
 	private bool IsDeposit => string.Equals(_model.Type, "Insättning", StringComparison.OrdinalIgnoreCase);
 	private bool IsWithdraw => string.Equals(_model.Type, "Uttag", StringComparison.OrdinalIgnoreCase);
 	private bool IsTransfer => string.Equals(_model.Type, "Överföring", StringComparison.OrdinalIgnoreCase);
 
-
+	// Validates user input and performs the selected transaction type.
+	// Shows feedback messages, refreshes accounts and resets the form when done.
 	private async Task SubmitAsync()
 	{
 
@@ -147,6 +162,8 @@
 		}
 	}
 
+	// Represents the input fields for a new transaction.
+	// Includes validation for amount and optional note. 
 	private class FormModel
 	{
 		public string Type { get; set; } = "Insättning";

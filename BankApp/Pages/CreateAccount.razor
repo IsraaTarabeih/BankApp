@@ -1,29 +1,37 @@
 ﻿@page "/CreateAccount"
 @inject IAccountService AccountService
 
+@* 
+	Page for creating bank accounts and listing existing ones.
+	Shows green success or red error alerts after actions.
+*@
 
 <h3>Vänligen skapa ditt konto</h3>
 
+@* Shows red alert box when the service throws/returns an error. *@ 
 @if (!string.IsNullOrWhiteSpace(_error))
 {
 	<div class="alert alert-danger">@_error</div>
 }
+
+@* Shows green alert box when an operation succeeds. *@
 @if (!string.IsNullOrWhiteSpace(_ok))
 {
 	<div class="alert alert-success">@_ok</div>
 }
 
-<!-- Formulär för att skapa konto-->
+@* Form for creating a new account. *@
 <EditForm Model="_model" OnValidSubmit="CreateAccountAsync">
 	<DataAnnotationsValidator />
 	<ValidationSummary />
 	<div>
+		@* Account name required. *@
 		<label>Kontonamn</label>
 		<InputText @bind-Value="_model.Name"/>
 		<ValidationMessage TValue="string" For="@(() => _model.Name)" />
 	</div>
-
 	<div>
+		@* Account type required. *@
 		<label>KontoTyp</label>
 		<InputSelect @bind-Value="_model.Type">
 			<option value="">Välj Kontotyp!</option>
@@ -33,29 +41,32 @@
 		</InputSelect>
 		<ValidationMessage TValue="AccountType?" For="@(() => _model.Type)" />
 	</div>
-
 	<div>
+		@* Currency required. *@
 		<label>Valuta</label>
 		<InputText @bind-Value="_model.Currency" />
 		<ValidationMessage TValue="string" For="@(() => _model.Currency)" />
 	</div>
 	<div>
+		@* Initial balance (must be > 0). *@
 		<label>Start saldo</label>
 		<InputNumber @bind-Value="_model.InitialBalance"/>
 		<ValidationMessage TValue="decimal" For="@(() => _model.InitialBalance)" />
 	</div>
-
+	@* Button for submitting the form. *@ 
 	<button type="submit">Skapa konto!</button>
 </EditForm>
 
 <h3>Dina konton</h3>
 
+@* Message shown when no accounts exist. *@ 
 @if (accounts == null || !accounts.Any())
 {
 	<p>Inga konton skapade ännu.</p>
 }
 else
 {
+	@* Table that lists all accounts with their details. *@ 
 	<table class="table">
 		<thead>
 			<tr>
@@ -68,6 +79,7 @@ else
 			</tr>
 		</thead>
 	<tbody>
+		@* One table row per account. *@
 		@foreach (var acc in accounts)
 		{
 			<tr>
@@ -77,6 +89,7 @@ else
 				<td>@acc.Balance.ToString("N0", CultureInfo.GetCultureInfo("sv-SE"))</td>
 				<td>@acc.LastUpdated.ToString("yyyy-MM-dd HH:mm", CultureInfo.GetCultureInfo("sv-SE"))</td>
 				<td class="text-end">
+					@* Delete the selected account, then refresh the list. *@
 					<button type="button"
 						class="btn btn-sm btn-outline-danger"
 					@onclick="() => DeleteAccount(acc.Id)">
@@ -87,22 +100,26 @@ else
 		}
 	</tbody>
 	</table>
-
 }
 
 @code {
+	// Holds all accounts currently loaded from the service.
 	private List<IBankAccount> accounts = new();
+
+	// Stores the user input while creating a new account.
 	private CreateAccountModel _model = new();
+
+	// Feedback messages for the alert boxes.
 	private string? _error;
 	private string? _ok;
 
-	//Laddar konton när sidan öppnas
+	// Loads all accounts when the page opens.
 	protected override async Task OnInitializedAsync()
 	{
 		accounts = await AccountService.GetAccountsAsync();
 	}
 
-	// Skapar nytt konto 
+	// Runs when the form is submitted and all inputs are valid. Creates the account, reloads the list, and shows success or error messages.
 	private async Task CreateAccountAsync()
 	{
 		_error = null;
@@ -131,19 +148,18 @@ else
 		}
 		catch (Exception ex)
 		{
-			_error = ex.Message;
+			_error = ex.Message; 
 		}
-
 	}
 
-	//Raderar konto (kopplas till knappen)
+	// Deletes an account by its ID and refreshes the list.
 	private async Task DeleteAccount(Guid id)
 	{
 		await AccountService.DeleteAccountAsync(id);
 		accounts = await AccountService.GetAccountsAsync();
 	}
 
-	//Modell för 
+	// Form model with validation rules for creating new accounts.
 	private class CreateAccountModel
 	{
 		[Required(ErrorMessage = "Namn krävs.")]
@@ -158,21 +174,13 @@ else
 		[Range(0, double.MaxValue, ErrorMessage = "Startsaldo kan inte vara negativt.")]
 		public decimal InitialBalance { get; set; } = 0m;
 
+		// Resets all fields to their default vaules.
 		public void Clear()
 		{
 			Name = string.Empty;
 			Type = null;
 			Currency = string.Empty;
-			InitialBalance = 0m;
-			 
+			InitialBalance = 0m;	 
 		}
-
 	}
-
-
 }
-
-		
-	
-
-	
