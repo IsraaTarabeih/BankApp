@@ -1,4 +1,7 @@
-﻿@inherits LayoutComponentBase
+﻿@inject BankApp.Interface.IPinLockService Pin
+@inject NavigationManager Nav
+@inherits LayoutComponentBase
+
 <div class="page">
     <div class="sidebar">
         <NavMenu />
@@ -14,3 +17,20 @@
         </article>
     </main>
 </div>
+
+@code {
+    /// <summary>
+    /// Runs when the layout is first initialized.
+    /// Checks if the user has entered the correct PIN.
+    /// If not, redirects them to the login page.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        await Pin.InitializedAsync();
+
+        if (!Pin.IsUnlocked)
+        {
+            Nav.NavigateTo("/login");
+        }
+    }
+}

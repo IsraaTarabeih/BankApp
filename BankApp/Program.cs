@@ -23,5 +23,13 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<IStorageService, LocalStorageService>();
 
+// Registers the PIN lock service with my fixed PIN code. 
+builder.Services.AddScoped<IPinLockService>(sp =>
+{
+    var localStorage = sp.GetRequiredService<Blazored.LocalStorage.ILocalStorageService>();
+    return new BankApp.Services.PinLockService(localStorage, "7788");
+
+});
+
 // Builds and runs the application.
 await builder.Build().RunAsync();

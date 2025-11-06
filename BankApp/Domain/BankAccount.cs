@@ -11,6 +11,12 @@ public class BankAccount : IBankAccount
     public string Currency { get; private set; } = string.Empty;
     public decimal Balance { get; private set; } 
     public DateTime LastUpdated { get; private set; }
+    public decimal? InterestRate { get; set; }
+
+    [JsonInclude]
+    public DateTime? LastInterestApplied { get; internal set; }
+
+    public void MarkInterestApplied(DateTime date) => LastInterestApplied = date;
 
     // Constructor used when creating a new account. It saves the given values into the account´s fields.
     public BankAccount(string name, AccountType accountType, string currency, decimal initialbalance)

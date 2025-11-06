@@ -1,10 +1,12 @@
-﻿@*
+﻿@inject BankApp.Interface.IPinLockService Pin
+@inject NavigationManager Nav
+
+@*
     <summary>
         Navigation menu for the BankApp.
         Shows links to different pages and controls the menu visibility.
     </summary>
 *@
-
 <div class="top-row ps-4 navbar navbar-dark">
     <div class="container-fluid">
         @* App title and button to show or hide the menu. *@
@@ -53,6 +55,11 @@
                     <span class="bi bi-clock-history nav-menu" aria-hidden="true"></span> Historik
                 </NavLink>
             </div>
+            <div class="nav-item px-3">
+                <button class="nav-link btn btn-link" @onclick="LockNow" aria-hidden="true">
+                    Lås (logga ut)
+                </button>
+            </div>
     </nav>
 </div>
 
@@ -67,5 +74,12 @@
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
+    }
+
+    // Locks the app and redirects the user back to the login page.
+    private async Task LockNow()
+    {
+        await Pin.LockAsync();
+        Nav.NavigateTo("/login");
     }
 }

@@ -1,0 +1,61 @@
+﻿@page "/login"
+@layout NoNavLayout
+@inject BankApp.Interface.IPinLockService Pin 
+@inject NavigationManager Nav 
+
+<h3>Ange PIN-kod</h3>
+
+@* Shows an error message if the PIN is wrong och invalid. *@
+@if (!string.IsNullOrEmpty(_error))
+{
+	<div class="alert alert-danger">@_error</div>
+}
+
+@* Form for entering the 4-digit PIN. *@
+<EditForm Model="_model" OnValidSubmit="SubmitAsync">
+	<DataAnnotationsValidator />
+	@* PIN input field. *@
+	<div class="mb-3">
+		<label>PIN (4 siffror)</label><br />
+		<InputText @bind-Value="_model.Code" typeof="password" maxlength="4" />
+	</div>
+	@* Submit button. *@
+	<button type="submit" class="btn btn-primary">Lås upp</button>
+</EditForm>
+
+@code {
+
+	// Holds users input for the form and stores error message shown to the user.
+	private PinModel _model = new();
+	private string? _error;
+
+	// Handles form submission, validates input and checks if the PIN is correct.
+	private async Task SubmitAsync()
+	{
+		_error = null;
+
+		// Check that the entered code is exactly 4 digits and contains only numbers.
+		if (string.IsNullOrWhiteSpace(_model.Code) || _model.Code.Length != 4 || !_model.Code.All(char.IsDigit))
+		{
+			_error = "Ange en giltig 4-siffrig PIN.";
+			return;
+		}
+
+		// Try to verify the entered PIN.
+		var ok = await Pin.VerifyAsync(_model.Code);
+		if (!ok)
+		{
+			_error = "Fel PIN-kod.";
+			return;
+		}
+
+		// Redirects to the home page after successful unlock.
+		Nav.NavigateTo("/");
+	}
+
+	// Represents the user´s input model for the PIN form.
+	private sealed class PinModel
+	{
+		public string Code { get; set; } = string.Empty;
+	}
+}
