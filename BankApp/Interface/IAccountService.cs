@@ -1,7 +1,9 @@
 ﻿namespace BankApp.Interface;
 
 /// <summary>
-/// Defines the contract for account related operations.
+/// Defines all actions that can be done with bank accounts.
+/// Includes creating, deleting, depositing, withdrawing,
+/// transferring money, and viewing transactions.
 /// </summary>
 public interface IAccountService
 {
@@ -25,4 +27,8 @@ public interface IAccountService
 
     // Retrieves all transactions, optionally filtered by account.
     Task<List<Transaction>> GetTransactionsAsync(Guid? accountId = null);
+
+    // Applies interest to a savings account using the predefined rate and period.
+    // Returns the interest amount that was added.
+    Task<decimal> ApplyInterestAsync(Guid accountId);
 }

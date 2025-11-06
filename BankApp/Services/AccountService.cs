@@ -146,4 +146,40 @@ public class AccountService : IAccountService
         await _storage.SaveAccountsAsync(concrete); // Skriv kontolistan till LocalStorage.
         await _storage.SaveTransactionsAsync(_transactions); // Skriv transaktionslistan till LocalStorage. 
     }
+
+    public async Task<decimal> ApplyInterestAsync(Guid accountId)
+    {
+        await EnsureLoadedAsync();
+
+        var account = _accounts.FirstOrDefault(a => a.Id == accountId) as BankAccount;
+        if (account is null)
+            throw new InvalidOperationException("Kontot kunde inte hittas.");
+
+        if (account.AccountType != AccountType.Sparkonto)
+            throw new InvalidOperationException("Ränta kan bara läggas på sparkonto.");
+
+        // STOPP: ränta en gång per månad.
+        var today = DateTime.Today;
+        if (account.LastInterestApplied.HasValue &&
+            account.LastInterestApplied.Value.Year == today.Year &&
+            account.LastInterestApplied.Value.Month == today.Month)
+            throw new InvalidOperationException("Ränta kan bara läggas en gång per månad på detta konto.");
+
+        decimal annualRate = 2.5m;
+        int days = 30;
+
+        var interest = account.Balance * (annualRate / 100m) * (days / 365m);
+        interest = Math.Round(interest, 2, MidpointRounding.ToEven);
+
+        if (interest <= 0)
+            return 0m;
+
+        await DepositAsync(accountId, interest, note: "Ränta");
+
+        account.MarkInterestApplied(DateTime.Today);
+        await PersistAsync();
+
+        _logger.LogInformation("Ränta {Interest} lades på konto {AccountId}. Nytt saldo: {Balance}.", interest, accountId, account.Balance);
+        return interest;
+    }
 }

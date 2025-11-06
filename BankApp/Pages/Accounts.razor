@@ -8,6 +8,15 @@
 
 <h3>Dina Konton</h3>
 
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+	<div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrWhiteSpace(_ok))
+{
+	<div class="alert alert-success">@_ok</div>
+}
+
 @* Shows a red alert if a server/service error message exits. *@
 @if (!string.IsNullOrWhiteSpace(error))
 {
@@ -37,18 +46,27 @@ else
 			@* Show one table row for each account. *@
 			@foreach (var acc in accounts)
 			{
-				<tr>
-					<td>@acc.Name</td>
-					<td>@acc.AccountType</td>
-					<td>@acc.Currency</td>
-					<td class="text-end">@acc.Balance.ToString("N0", CultureInfo.GetCultureInfo("sv-SE"))</td>
-					<td>@acc.LastUpdated.ToString("yyyy-MM-dd HH:mm", CultureInfo.GetCultureInfo("sv-SE"))</td>
-					<td class="text-end">
-						@* Delete the selected account, then refresh the list. *@
-						<button class="btn btn-sm btn-outline-danger"
-						@onclick="() => DeleteAccount(acc.Id)">
-						Radera
-					</button>
+		       <tr>
+				   <td>@acc.Name</td>
+				   <td>@acc.AccountType</td>
+				   <td>@acc.Currency</td>
+				   <td class="text-end">@acc.Balance.ToString("N0", CultureInfo.GetCultureInfo("sv-SE"))</td>
+				   <td>@acc.LastUpdated.ToString("yyyy-MM-dd HH:mm", CultureInfo.GetCultureInfo("sv-SE"))</td>
+				   <td class="text-end">
+					   @* Delete the selected account, then refresh the list. *@
+					   <button class="btn btn-sm btn-outline-danger me-2"
+						       @onclick="() => DeleteAccount(acc.Id)">
+						   Radera
+					   </button>
+					   @* Apply interest only if this is a savings account. *@
+					   @if (acc.AccountType == AccountType.Sparkonto)
+					   {
+						   <button class="btn btn-sm btn-outline-success"
+						           disabled="@IsInterestDisabled(acc)"
+								   @onclick="() => ApplyInterestAsync(acc.Id)">
+							   Lägg till ränta
+						   </button>	
+					   }
 					</td>
 				</tr>
 			}
@@ -58,12 +76,29 @@ else
 
 @* Handles loading and deleting bank accounts. *@
 @code {
+	private string? _error;
+	private string? _ok;
+	private bool _busy;
 
 	// Stores the last error message to display on the page.
 	private string? error;
 
 	// Contains all accounts currently displayed in the table.
 	private List<IBankAccount> accounts = new();
+
+	private static bool InterestAlreadyAppliedThisMonth(IBankAccount a)
+	{
+		if (a is BankAccount b && b.LastInterestApplied.HasValue)
+		{
+			var d = b.LastInterestApplied.Value;
+			var t = DateTime.Today;
+			return d.Year == t.Year && d.Month == t.Month;
+
+		}
+		return false;
+	}
+	private bool IsInterestDisabled(IBankAccount a)
+	=> _busy || a.AccountType != AccountType.Sparkonto || InterestAlreadyAppliedThisMonth(a);
 
 	// Deletes an account by its ID and refreshes the account list.
 	private async Task DeleteAccount(Guid id)
@@ -84,5 +119,30 @@ else
 	protected override async Task OnInitializedAsync()
 	{
 		accounts = await AccountService.GetAccountsAsync();
+	}
+
+	private async Task ApplyInterestAsync(Guid accountId)
+	{
+		_error = null;
+		_ok = null;
+		_busy = true;
+
+		try
+		{
+			var name = accounts.FirstOrDefault(a => a.Id == accountId)?.Name ?? "kontot";
+			var amount = await AccountService.ApplyInterestAsync(accountId);
+
+			_ok = $"Ränta på {amount.ToString("N2", CultureInfo.GetCultureInfo("sv-SE"))} kr lades till på {name}.";
+			accounts = await AccountService.GetAccountsAsync();
+		}
+		catch (Exception ex)
+		{
+			_error = ex.Message;
+		}
+		finally
+		{
+			_busy = false;
+			StateHasChanged();
+		}
 	}
 }
