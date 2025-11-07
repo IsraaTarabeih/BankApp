@@ -11,7 +11,6 @@ public interface IBankAccount
     string Currency {  get; }
     decimal Balance { get; }
     DateTime LastUpdated { get; }
-    DateTime? LastInterestApplied { get; }
 
     // Deposits the specified amount into the account.
     void Deposit (decimal amount); 

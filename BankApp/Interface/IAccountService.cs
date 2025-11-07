@@ -28,7 +28,16 @@ public interface IAccountService
     // Retrieves all transactions, optionally filtered by account.
     Task<List<Transaction>> GetTransactionsAsync(Guid? accountId = null);
 
-    // Applies interest to a savings account using the predefined rate and period.
-    // Returns the interest amount that was added.
-    Task<decimal> ApplyInterestAsync(Guid accountId);
+    // Exports all account and transaction data as a JSON string for backup.
+    Task<string> ExportJsonAsync();
+
+    // Imports account and transaction data from a provided Json string.
+    // Can replace or merge with existing data depending on "replaceExisting".
+    Task<List<string>> ImportJsonAsync(string json,bool replaceExisting = true);
+
+    // Adds interest automatically to all savings accounts on a regular schedule. 
+    void AutoInterestUpdates();
+
+    // Triggered whenever interest has been successfully applied to one or more accounts.
+    event EventHandler<InterestAppliedEventArgs>? InterestApplied;
 }

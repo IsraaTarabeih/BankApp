@@ -3,6 +3,10 @@
 @inject BankApp.Interface.IPinLockService Pin 
 @inject NavigationManager Nav 
 
+@* 
+	Login page where the user unlocks the app with a 4-digit PIN (check README).
+	Validates input, shows error messages, and redirects to the home page after successful login.
+*@
 <h3>Ange PIN-kod</h3>
 
 @* Shows an error message if the PIN is wrong och invalid. *@

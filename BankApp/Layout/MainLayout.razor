@@ -1,6 +1,7 @@
-﻿@inject BankApp.Interface.IPinLockService Pin
+﻿@inject IPinLockService Pin
 @inject NavigationManager Nav
-@inherits LayoutComponentBase
+@inject IAccountService AccountService
+@inherits LayoutComponentBase 
 
 <div class="page">
     <div class="sidebar">
@@ -8,10 +9,6 @@
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
         <article class="content px-4">
             @Body
         </article>
@@ -31,6 +28,10 @@
         if (!Pin.IsUnlocked)
         {
             Nav.NavigateTo("/login");
+            return;
         }
+
+        // Starts automatic interest updates for all accounts (runs for the entire app´s lifetime).
+        AccountService.AutoInterestUpdates();
     }
 }

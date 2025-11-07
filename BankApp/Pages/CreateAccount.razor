@@ -127,16 +127,10 @@ else
 
 		try
 		{
-			if (_model.Type is null)
-			{
-				_error = "Välj en kontotyp.";
-				return;
-			}
-
 			await AccountService.CreateBankAccountAsync(
 
-				_model.Name,
-				_model.Type.Value,
+				_model.Name.Trim(),
+				_model.Type!.Value,
 				_model.Currency,
 				_model.InitialBalance
 			);

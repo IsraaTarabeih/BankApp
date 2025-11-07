@@ -1,0 +1,149 @@
+﻿@page "/exportimport"
+@inject IAccountService AccountService
+@inject IJSRuntime JS
+
+@*
+	Page for exporting and importing all accounts and transactions.
+	Allows users to back up or restore data as a JSON file.
+*@
+
+<h3>Exportera/Importera alla konton och transaktioner</h3>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+	<div class="alert alert-danger">@_error</div>
+}
+@if (!string.IsNullOrEmpty(_ok))
+{
+	<div class="alert alert-success">@_ok</div>
+}
+
+@* Export button. *@
+<div class="mb-3">
+	<button class="btn btn-primary me-2" @onclick="DownloadJsonAsync" disabled="@_busy">
+		Exportera (JSON)
+	</button>
+</div>
+
+@* File selection for import. *@
+<label class="form-label">Välj JSON-fil att importera</label>
+<InputFile OnChange="OnFileSelected" accept=".json,application/json" />
+
+@* Option to replace or merge data. *@
+<div class="form-check mt-2">
+	<input class="form-check-input" type="checkbox" id="replaceExisting" @bind="_replaceExisting" />
+	<label class="form-check-label" for="replaceExisting">
+		Ersätt befintliga konton/transaktioner (avmarkera för merge)
+	</label>
+</div>
+
+@* import button. *@
+<button class="btn btn-secondary mt-2"
+		@onclick="ImportFromSelectedFile"
+		disabled="@(_busy || _selectedFile is null)">
+	Importera vald fil
+</button>
+
+@* Displays JSON content after import/export. *@
+@if (!string.IsNullOrEmpty(_json))
+{
+	<div class="mt-3">
+		
+		<textarea class="form-control" rows="20" readonly>@_json</textarea>
+		
+	</div>
+}
+
+@code {
+
+	private string? _json;
+	private string? _error;
+	private string? _ok;
+	private bool _busy;
+	private IBrowserFile? _selectedFile;
+	private bool _replaceExisting = false;
+
+	// Exports all accounts and transactions to a downloadable JSON backup file. 
+	private async Task DownloadJsonAsync()
+	{
+		_error = null;
+		_ok = null;
+		_busy = true;
+
+		try
+		{
+			var json = await AccountService.ExportJsonAsync();
+
+			var fileName = $"bank-backup-{DateTime.Now:yyyyMMdd-HHmm}.json";
+
+			await JS.InvokeVoidAsync(
+				"downloadFileFromText",
+				fileName,
+				"application/json",
+				json);
+
+			_ok = "Exporten lyckades. JSON har laddats ner.";
+		}
+		catch(Exception ex)
+		{
+			_error = "Ett fel uppstod vid export: " + ex.Message;
+		}
+		finally
+		{
+			_busy = false;
+			StateHasChanged();
+		}
+	}
+
+	// Triggered when a file is selected, saves the chosen file to import.
+	private void OnFileSelected(InputFileChangeEventArgs e)
+	{
+		_error = null;
+		_ok = null;
+		_selectedFile = e.File;
+	}
+
+	// Imports account and transaction data from the selected JSON file and updates the app state.
+	private async Task ImportFromSelectedFile()
+	{
+		_busy = true;
+		_error = null;
+		_ok = null;
+
+		if (_selectedFile is null)
+		{
+			_error = "Välj en JSON-fil först.";
+			_busy = false;
+			return;
+		}
+
+		try
+		{
+			const long maxSize = 5 * 1024 * 1024;
+			await using var stream = _selectedFile.OpenReadStream(maxAllowedSize: maxSize);
+			using var reader = new StreamReader(stream);
+			var json = await reader.ReadToEndAsync();
+
+			var errors = await AccountService.ImportJsonAsync(json, _replaceExisting);
+
+			if (errors.Count == 0)
+			{
+				_ok = "Importen lyckades.";
+				_json = json;
+			}
+			else
+			{
+				_error = string.Join(" ", errors);
+			}
+		}
+		catch (Exception ex)
+		{
+			_error = "Ett fel uppstod vid import: " + ex.Message;
+		}
+		finally
+		{
+			_busy = false;
+			StateHasChanged();
+		}
+	}
+}
