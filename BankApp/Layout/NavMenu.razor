@@ -11,7 +11,12 @@
     <div class="container-fluid">
         @* App title and button to show or hide the menu. *@
         <a class="navbar-brand" href="">BankApp</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+        <button title="Toggle navigation menu"
+                class="navbar-toggler"
+                type="button"
+                @onclick="ToggleNavMenu"
+                aria-controls="mainNav"
+                aria-expanded="@(!collapseNavMenu)">
             <span class="navbar-toggler-icon"></span>
         </button>
     </div>
@@ -55,8 +60,13 @@
                     <span class="bi bi-clock-history nav-menu" aria-hidden="true"></span> Historik
                 </NavLink>
             </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/exportimport">
+                <span class="bi bi-filetype-json nav-menu" aria-hidden="true"></span> Exportera/Importera
+            </NavLink>
+        </div>
             <div class="nav-item px-3">
-                <button class="nav-link btn btn-link" @onclick="LockNow" aria-hidden="true">
+                <button class="nav-link btn btn-link" type="button" @onclick="LockNow">
                     Lås (logga ut)
                 </button>
             </div>

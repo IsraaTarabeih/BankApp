@@ -2,25 +2,25 @@
 @inject IAccountService AccountService
 
 @*
-	Page that lists the user´s bank accounts.
+	Page that displays all user bank accounts.
+	Displays automatic interest updates for saving accounts.
 	Displays an error if something fails and allows deleting accounts.
 *@
 
 <h3>Dina Konton</h3>
 
+<p class="text-muted mb-2">
+	Ränta beräknas automatiskt på alla sparkonton varje minut.
+</p>
+@if (!string.IsNullOrEmpty(_interestBanner))
+{
+	<div class="alert alert-info py-2 my-2">
+		@_interestBanner
+	</div>
+}
 @if (!string.IsNullOrWhiteSpace(_error))
 {
 	<div class="alert alert-danger">@_error</div>
-}
-@if (!string.IsNullOrWhiteSpace(_ok))
-{
-	<div class="alert alert-success">@_ok</div>
-}
-
-@* Shows a red alert if a server/service error message exits. *@
-@if (!string.IsNullOrWhiteSpace(error))
-{
-	<div class="alert alert-danger">@error</div>
 }
 
 @* If there are no accounts, show an empty-state message. *@
@@ -58,15 +58,6 @@ else
 						       @onclick="() => DeleteAccount(acc.Id)">
 						   Radera
 					   </button>
-					   @* Apply interest only if this is a savings account. *@
-					   @if (acc.AccountType == AccountType.Sparkonto)
-					   {
-						   <button class="btn btn-sm btn-outline-success"
-						           disabled="@IsInterestDisabled(acc)"
-								   @onclick="() => ApplyInterestAsync(acc.Id)">
-							   Lägg till ränta
-						   </button>	
-					   }
 					</td>
 				</tr>
 			}
@@ -77,33 +68,15 @@ else
 @* Handles loading and deleting bank accounts. *@
 @code {
 	private string? _error;
-	private string? _ok;
-	private bool _busy;
-
-	// Stores the last error message to display on the page.
-	private string? error;
+	private string? _interestBanner;
 
 	// Contains all accounts currently displayed in the table.
 	private List<IBankAccount> accounts = new();
 
-	private static bool InterestAlreadyAppliedThisMonth(IBankAccount a)
-	{
-		if (a is BankAccount b && b.LastInterestApplied.HasValue)
-		{
-			var d = b.LastInterestApplied.Value;
-			var t = DateTime.Today;
-			return d.Year == t.Year && d.Month == t.Month;
-
-		}
-		return false;
-	}
-	private bool IsInterestDisabled(IBankAccount a)
-	=> _busy || a.AccountType != AccountType.Sparkonto || InterestAlreadyAppliedThisMonth(a);
-
 	// Deletes an account by its ID and refreshes the account list.
 	private async Task DeleteAccount(Guid id)
 	{
-		error = null;
+		_error = null;
 		try
 		{
 			await AccountService.DeleteAccountAsync(id);
@@ -111,7 +84,7 @@ else
 		}
 		catch (Exception ex)
 		{
-			error = ex.Message;
+			_error = ex.Message;
 		}
 	}
 
@@ -119,30 +92,40 @@ else
 	protected override async Task OnInitializedAsync()
 	{
 		accounts = await AccountService.GetAccountsAsync();
+
+		AccountService.InterestApplied += OnInterestApplied;
 	}
 
-	private async Task ApplyInterestAsync(Guid accountId)
+	// Handles the event when interest is applied and updates the UI with a temporary banner.
+	private async void OnInterestApplied(object? sender, InterestAppliedEventArgs e)
 	{
-		_error = null;
-		_ok = null;
-		_busy = true;
-
 		try
 		{
-			var name = accounts.FirstOrDefault(a => a.Id == accountId)?.Name ?? "kontot";
-			var amount = await AccountService.ApplyInterestAsync(accountId);
-
-			_ok = $"Ränta på {amount.ToString("N2", CultureInfo.GetCultureInfo("sv-SE"))} kr lades till på {name}.";
 			accounts = await AccountService.GetAccountsAsync();
+
+			var name = accounts.FirstOrDefault(a => a.Id == e.AccountId)?.Name ?? "sparkonto";
+			var amountText = e.Amount.ToString("n2", CultureInfo.GetCultureInfo("sv-SE"));
+
+			_interestBanner = $"Ränta på {amountText} kr lades till på {name}.";
+
+			_ = Task.Run(async () =>
+			{
+				await Task.Delay(60000);
+				_interestBanner = null;
+				await InvokeAsync(StateHasChanged);
+			});
+
+			await InvokeAsync(StateHasChanged);
 		}
 		catch (Exception ex)
 		{
-			_error = ex.Message;
+			Console.WriteLine($"Interest update failed: {ex.Message}");
 		}
-		finally
-		{
-			_busy = false;
-			StateHasChanged();
-		}
+	}
+
+	// Unsubscribes from the InterestApplied event to prevent memory leaks when the page is closed.
+	public void Dispose()
+	{
+		AccountService.InterestApplied -= OnInterestApplied;
 	}
 }

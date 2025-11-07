@@ -6,37 +6,37 @@
 /// </summary>
 public class LocalStorageService : IStorageService
 {
-    private const string Key = "accounts_v6"; // Nyckel där kontolistan lagras som JSON i LocalStorage.
-    private const string TransactionsKey = "transactions_v1"; // Nyckel där transaktionslistan lagras. 
-    private readonly ILocalStorageService _localStorage; // Håller kopplingen till LocalStorage så vi kan spara och läsa data i webbläsaren.  
+    private const string Key = "accounts_v6"; 
+    private const string TransactionsKey = "transactions_v1";  
+    private readonly ILocalStorageService _localStorage;   
 
     // Initializes the local storage service.
-    public LocalStorageService(ILocalStorageService localStorage) => _localStorage = localStorage; // Får in localStorage-tjänsten automatisk (Dependency Injection) och sparar den i fältet.
+    public LocalStorageService(ILocalStorageService localStorage) => _localStorage = localStorage; 
 
     // Loads all saved bank accounts from local storage. 
     public async Task<List<BankAccount>> LoadAccountsAsync() =>
 
-        await _localStorage.GetItemAsync<List<BankAccount>>(Key) ?? new List<BankAccount>(); // Hämtar kontolistan från LocalStorage, eller skapar en tom lista om ingen finns sparad.
+        await _localStorage.GetItemAsync<List<BankAccount>>(Key) ?? new List<BankAccount>(); 
 
     // Saves all bank accounts to local storage.  
     public async Task SaveAccountsAsync(List<BankAccount> accounts) =>
     
-        await _localStorage.SetItemAsync(Key, accounts); // Gör om lista till text (JSON) och sparar den i webbläsarens localStorage. 
+        await _localStorage.SetItemAsync(Key, accounts);  
 
     // Loads all saved transactions from local storage. 
     public async Task<List<Transaction>> LoadTransactionsAsync() =>
 
-        await _localStorage.GetItemAsync<List<Transaction>>(TransactionsKey) ?? new List<Transaction>(); // Läs transaktioner (eller tom lista). 
+        await _localStorage.GetItemAsync<List<Transaction>>(TransactionsKey) ?? new List<Transaction>();
 
     // Saves all transactions to local storage. 
     public async Task SaveTransactionsAsync(List<Transaction> transactions) =>
 
-        await _localStorage.SetItemAsync(TransactionsKey, transactions); // Sparar alla transaktioner i webbläsaren så de finnas kvar nästa gång man öppnar appen.
+        await _localStorage.SetItemAsync(TransactionsKey, transactions); 
     
     // Clears all stored account and transaction data from local storage. 
     public async Task ClearAsync()
     {
-        await _localStorage.RemoveItemAsync(Key); // Ta bort kontolistan i localStorage.
-        await _localStorage.RemoveItemAsync(TransactionsKey); // Ta bort transaktionslistan i localStorage.
+        await _localStorage.RemoveItemAsync(Key); 
+        await _localStorage.RemoveItemAsync(TransactionsKey); 
     }
 }
